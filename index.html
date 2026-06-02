@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hosting Monitor</title>
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Segoe UI,sans-serif;
+}
+
+body{
+background:#0f172a;
+color:white;
+padding:20px;
+}
+
+.header{
+text-align:center;
+margin-bottom:25px;
+}
+
+.header h1{
+font-size:32px;
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+gap:15px;
+}
+
+.card{
+background:#1e293b;
+border-radius:16px;
+padding:20px;
+box-shadow:0 0 15px rgba(0,0,0,.3);
+transition:.3s;
+}
+
+.card:hover{
+transform:translateY(-5px);
+}
+
+.title{
+font-size:14px;
+color:#94a3b8;
+margin-bottom:10px;
+}
+
+.value{
+font-size:28px;
+font-weight:bold;
+}
+
+.online{
+color:#22c55e;
+}
+
+.progress{
+height:10px;
+background:#334155;
+border-radius:20px;
+overflow:hidden;
+margin-top:10px;
+}
+
+.bar{
+height:100%;
+width:60%;
+background:#22c55e;
+}
+
+.footer{
+margin-top:30px;
+text-align:center;
+color:#94a3b8;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+<h1>🚀 Hosting Dashboard</h1>
+<p>Live System Information</p>
+</div>
+
+<div class="grid">
+
+<div class="card">
+<div class="title">CPU Cores</div>
+<div class="value" id="cpu">Loading...</div>
+</div>
+
+<div class="card">
+<div class="title">RAM (Approx)</div>
+<div class="value" id="ram">Loading...</div>
+</div>
+
+<div class="card">
+<div class="title">Network Type</div>
+<div class="value" id="net">Loading...</div>
+</div>
+
+<div class="card">
+<div class="title">Downlink Speed</div>
+<div class="value" id="speed">Loading...</div>
+</div>
+
+<div class="card">
+<div class="title">Server Status</div>
+<div class="value online">ONLINE</div>
+</div>
+
+<div class="card">
+<div class="title">Storage Usage</div>
+<div class="value">60%</div>
+<div class="progress">
+<div class="bar"></div>
+</div>
+</div>
+
+</div>
+
+<div class="footer">
+Hosting Monitor Dashboard
+</div>
+
+<script>
+document.getElementById("cpu").innerText =
+navigator.hardwareConcurrency || "Unknown";
+
+document.getElementById("ram").innerText =
+navigator.deviceMemory
+? navigator.deviceMemory + " GB"
+: "Unknown";
+
+if(navigator.connection){
+document.getElementById("net").innerText =
+navigator.connection.effectiveType;
+
+document.getElementById("speed").innerText =
+navigator.connection.downlink + " Mbps";
+}else{
+document.getElementById("net").innerText="Unknown";
+document.getElementById("speed").innerText="Unknown";
+}
+</script>
+
+</body>
+</html>
