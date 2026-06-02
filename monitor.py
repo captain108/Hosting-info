@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
 Real VPS Monitor – Python Web Dashboard
-Shows CPU cores, RAM, storage, uptime.
-Run: python3 vps_monitor.py
-Access: http://your-server-ip:5050
+Shows CPU cores, RAM, storage, uptime, OS.
+Deploy: binds to PORT env variable (default 8000).
 """
 
 from flask import Flask, jsonify, render_template_string
 import subprocess
 import re
 import os
+import platform
 
 app = Flask(__name__)
 
@@ -62,6 +62,9 @@ def get_uptime():
     mins = rem // 60
     return f"{int(days)}d {int(hours)}h {int(mins)}m"
 
+def get_os():
+    return f"{platform.system()} {platform.release()}"
+
 # ---------- API endpoint ----------
 @app.route('/api/stats')
 def stats():
@@ -69,7 +72,8 @@ def stats():
         'cpu_cores': get_cpu_cores(),
         'ram': get_ram(),
         'storage': get_storage(),
-        'uptime': get_uptime()
+        'uptime': get_uptime(),
+        'os': get_os()
     })
 
 # ---------- Dashboard HTML (inline template) ----------
@@ -140,37 +144,28 @@ async function fetchStats() {
         const res = await fetch('/api/stats');
         const data = await res.json();
 
-        // CPU cores
         document.getElementById('cpu').innerText = data.cpu_cores + ' cores';
 
-        // RAM
         const ram = data.ram;
         document.getElementById('ram').innerText = ram.used_gb + ' / ' + ram.total_gb + ' GB';
         const ramPercent = (ram.used_gb / ram.total_gb) * 100;
         document.getElementById('ramBar').style.width = ramPercent + '%';
 
-        // Storage
         const sto = data.storage;
         document.getElementById('storage').innerText = sto.used_gb + ' / ' + sto.total_gb + ' GB (' + sto.percent + '%)';
         document.getElementById('storageBar').style.width = sto.percent + '%';
 
-        // Uptime
         document.getElementById('uptime').innerText = data.uptime;
+        document.getElementById('os').innerText = data.os;
 
-        // Server status (page loaded = online)
         document.getElementById('status').innerText = 'ONLINE';
         document.getElementById('status').className = 'value online';
-
-        // OS info (gathered once, but we can fetch it from the server if we add to API)
-        // For simplicity we add a one-time OS reading – here we just leave placeholder,
-        // you can extend the API to return os info.
     } catch(e) {
         document.getElementById('status').innerText = 'OFFLINE';
         document.getElementById('status').className = 'value off';
     }
 }
 
-// Fetch immediately and then every 10 seconds
 fetchStats();
 setInterval(fetchStats, 10000);
 </script>
@@ -183,4 +178,5 @@ def index():
     return render_template_string(HTML_PAGE)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5050, debug=False)
+    port = int(os.environ.get('PORT', 8000))
+    app.run(host='0.0.0.0', port=port)
