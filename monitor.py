@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
 Real VPS Monitor – Python Web Dashboard
-Shows CPU cores, RAM, storage, uptime, OS.
-Deploy: binds to PORT env variable (default 8000).
+Binds to PORT env (default 8000) – IPv4 + IPv6.
 """
 
 from flask import Flask, jsonify, render_template_string
@@ -15,23 +14,29 @@ app = Flask(__name__)
 
 # ---------- System info functions ----------
 def get_cpu_cores():
-    with open('/proc/cpuinfo', 'r') as f:
-        return f.read().count('processor\t:')
+    try:
+        with open('/proc/cpuinfo', 'r') as f:
+            return f.read().count('processor\t:')
+    except:
+        return 0
 
 def get_ram():
-    with open('/proc/meminfo', 'r') as f:
-        mem = f.read()
-    total = re.search(r'MemTotal:\s+(\d+)', mem)
-    avail = re.search(r'MemAvailable:\s+(\d+)', mem)
-    if total and avail:
-        total_kb = int(total.group(1))
-        avail_kb = int(avail.group(1))
-        used_kb = total_kb - avail_kb
-        return {
-            'total_gb': round(total_kb / (1024**2), 1),
-            'used_gb': round(used_kb / (1024**2), 1),
-            'free_gb': round(avail_kb / (1024**2), 1)
-        }
+    try:
+        with open('/proc/meminfo', 'r') as f:
+            mem = f.read()
+        total = re.search(r'MemTotal:\s+(\d+)', mem)
+        avail = re.search(r'MemAvailable:\s+(\d+)', mem)
+        if total and avail:
+            total_kb = int(total.group(1))
+            avail_kb = int(avail.group(1))
+            used_kb = total_kb - avail_kb
+            return {
+                'total_gb': round(total_kb / (1024**2), 1),
+                'used_gb': round(used_kb / (1024**2), 1),
+                'free_gb': round(avail_kb / (1024**2), 1)
+            }
+    except:
+        pass
     return {'total_gb': 0, 'used_gb': 0, 'free_gb': 0}
 
 def get_storage():
@@ -55,15 +60,23 @@ def get_storage():
     return {'total_gb': 0, 'used_gb': 0, 'percent': 0}
 
 def get_uptime():
-    with open('/proc/uptime', 'r') as f:
-        seconds = float(f.readline().split()[0])
-    days, rem = divmod(seconds, 86400)
-    hours, rem = divmod(rem, 3600)
-    mins = rem // 60
-    return f"{int(days)}d {int(hours)}h {int(mins)}m"
+    try:
+        with open('/proc/uptime', 'r') as f:
+            seconds = float(f.readline().split()[0])
+        days, rem = divmod(seconds, 86400)
+        hours, rem = divmod(rem, 3600)
+        mins = rem // 60
+        return f"{int(days)}d {int(hours)}h {int(mins)}m"
+    except:
+        return "0d 0h 0m"
 
 def get_os():
     return f"{platform.system()} {platform.release()}"
+
+# ---------- Health check (required by platform) ----------
+@app.route('/health')
+def health():
+    return 'OK', 200
 
 # ---------- API endpoint ----------
 @app.route('/api/stats')
@@ -76,7 +89,7 @@ def stats():
         'os': get_os()
     })
 
-# ---------- Dashboard HTML (inline template) ----------
+# ---------- Dashboard HTML (unchanged) ----------
 HTML_PAGE = """
 <!DOCTYPE html>
 <html lang="en">
@@ -145,7 +158,6 @@ async function fetchStats() {
         const data = await res.json();
 
         document.getElementById('cpu').innerText = data.cpu_cores + ' cores';
-
         const ram = data.ram;
         document.getElementById('ram').innerText = ram.used_gb + ' / ' + ram.total_gb + ' GB';
         const ramPercent = (ram.used_gb / ram.total_gb) * 100;
@@ -165,7 +177,6 @@ async function fetchStats() {
         document.getElementById('status').className = 'value off';
     }
 }
-
 fetchStats();
 setInterval(fetchStats, 10000);
 </script>
@@ -179,4 +190,6 @@ def index():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))
-    app.run(host='0.0.0.0', port=port)
+    print(f"Starting server on port {port} (IPv4 + IPv6)")
+    # Bind to '::' to accept both IPv4 and IPv6 connections
+    app.run(host='::', port=port)
